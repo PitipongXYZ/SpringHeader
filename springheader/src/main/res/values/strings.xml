@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">SpringHeader</string>
+
+    <string name="spring_header_behavior">com.loopeer.springheader.SpringHeaderBehavior</string>
+    <string name="dependent_view_behavior">com.loopeer.springheader.DependentViewBehavior</string>
+
+    <string name="simple_refresh_header_text_below_threshold">下拉刷新</string>
+    <string name="simple_refresh_header_text_above_threshold">释放刷新</string>
+    <string name="simple_refresh_header_text_refreshing">正在加载</string>
+</resources>
