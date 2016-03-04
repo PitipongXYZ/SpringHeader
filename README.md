@@ -3,6 +3,8 @@ SpringHeader
 
 An implementation of spring-like header (known as pull-to-refresh) that using `CoordinatorLayout`.
 
+![demo](art/demo.gif)
+
 Usage
 --------
 
