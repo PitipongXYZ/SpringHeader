@@ -22,7 +22,7 @@ public class DependentViewBehavior extends ViewOffsetBehavior<View> {
 
     @Override
     public boolean onDependentViewChanged(CoordinatorLayout parent, View child, View dependency) {
-        int offset = ((SpringHeaderBehavior) getBehavior(dependency)).getTopAndBottomOffset();
+        int offset = ((SpringHeaderBehavior) getBehavior(dependency)).getCurrentRange();
         return setTopAndBottomOffset(offset);
     }
 

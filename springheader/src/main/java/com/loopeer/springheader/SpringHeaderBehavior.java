@@ -13,6 +13,8 @@ import android.view.animation.DecelerateInterpolator;
 
 public class SpringHeaderBehavior extends ViewOffsetBehavior<View> {
 
+    private static final int UNSET = Integer.MIN_VALUE;
+
     public static final int STATE_COLLAPSED = 1;
     public static final int STATE_HOVERING = 2;
     public static final int STATE_DRAGGING = 3;
@@ -24,10 +26,12 @@ public class SpringHeaderBehavior extends ViewOffsetBehavior<View> {
 
     private float mTotalUnconsumed;
 
-    private int mDemandHoveringOffset = 0;
-    private int mDemandMaxOffset = Integer.MAX_VALUE;
+    private int mOriginalOffset = UNSET;
+    private int mHoveringRange = UNSET;
+    private int mMaxRange = UNSET;
     private int mHoveringOffset;
-    private int mMaxOffset;
+
+    private boolean mOriginalOffsetSet;
 
     private ValueAnimator mAnimator;
     private EndListener mEndListener;
@@ -39,27 +43,50 @@ public class SpringHeaderBehavior extends ViewOffsetBehavior<View> {
         super(context, attrs);
 
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.SpringHeaderBehavior_Params);
-        setHoveringOffset(a.getDimensionPixelSize(
-                R.styleable.SpringHeaderBehavior_Params_behavior_hoveringOffset, 0));
-        setMaxOffset(a.getDimensionPixelSize(
-                R.styleable.SpringHeaderBehavior_Params_behavior_maxOffset, Integer.MAX_VALUE));
+        setOriginalOffset(a.getDimensionPixelSize(
+                R.styleable.SpringHeaderBehavior_Params_behavior_originalOffset, UNSET));
+        setHoveringRange(a.getDimensionPixelSize(
+                R.styleable.SpringHeaderBehavior_Params_behavior_hoveringRange, UNSET));
+        setMaxRange(a.getDimensionPixelSize(
+                R.styleable.SpringHeaderBehavior_Params_behavior_maxRange, UNSET));
         a.recycle();
     }
 
-    public void setHoveringOffset(int hoveringOffset) {
-        mDemandHoveringOffset = hoveringOffset;
+    public void setOriginalOffset(int originalOffset) {
+        mOriginalOffset = originalOffset;
     }
 
-    public void setMaxOffset(int maxOffset) {
-        mDemandMaxOffset = maxOffset;
+    public void setHoveringRange(int hoveringRange) {
+        mHoveringRange = hoveringRange;
+        mHoveringOffset = mOriginalOffset + mHoveringRange;
+    }
+
+    public void setMaxRange(int maxRange) {
+        mMaxRange = maxRange;
     }
 
     @Override
     public boolean onLayoutChild(CoordinatorLayout parent, View child, int layoutDirection) {
         boolean handled = super.onLayoutChild(parent, child, layoutDirection);
-        mMaxOffset = Math.min(mDemandMaxOffset, parent.getHeight());
-        mHoveringOffset = mDemandHoveringOffset > 0 && mDemandHoveringOffset < mMaxOffset
-                ? mDemandHoveringOffset : child.getHeight();
+
+        int parentHeight = parent.getHeight();
+        int childHeight = child.getHeight();
+
+        if (mOriginalOffset == UNSET) {
+            setOriginalOffset(-childHeight);
+        }
+        if (mHoveringRange == UNSET) {
+            setHoveringRange(childHeight);
+        }
+        if (mMaxRange == UNSET) {
+            setMaxRange(parentHeight);
+        }
+
+        if (!mOriginalOffsetSet) {
+            super.setTopAndBottomOffset(mOriginalOffset);
+            mOriginalOffsetSet = true;
+        }
+
         return handled;
     }
 
@@ -114,7 +141,7 @@ public class SpringHeaderBehavior extends ViewOffsetBehavior<View> {
 
     private void animateOffsetToState(int endState) {
         int from = getTopAndBottomOffset();
-        int to = endState == STATE_HOVERING ? mHoveringOffset : 0;
+        int to = endState == STATE_HOVERING ? mHoveringOffset : mOriginalOffset;
         if (from == to) {
             setStateInternal(endState);
             return;
@@ -147,7 +174,7 @@ public class SpringHeaderBehavior extends ViewOffsetBehavior<View> {
     @Override
     public boolean setTopAndBottomOffset(int offset) {
         if (mCallback != null) {
-            mCallback.onScroll(offset, (float) offset / mHoveringOffset);
+            mCallback.onScroll(offset, (float) (offset - mOriginalOffset) / mHoveringRange);
         }
         return super.setTopAndBottomOffset(offset);
     }
@@ -171,11 +198,16 @@ public class SpringHeaderBehavior extends ViewOffsetBehavior<View> {
     }
 
     private int calculateScrollOffset() {
-        return (int) (mMaxOffset * (1 - Math.exp(-(mTotalUnconsumed / mMaxOffset / 2))));
+        return (int) (mMaxRange * (1 - Math.exp(-(mTotalUnconsumed / mMaxRange / 2))))
+                + mOriginalOffset;
     }
 
     private int calculateScrollUnconsumed() {
-        return (int) (-Math.log(1 - (float) getTopAndBottomOffset() / mMaxOffset) * mMaxOffset * 2);
+        return (int) (-Math.log(1 - (float) getCurrentRange() / mMaxRange) * mMaxRange * 2);
+    }
+
+    public int getCurrentRange() {
+        return getTopAndBottomOffset() - mOriginalOffset;
     }
 
     public void setSpringHeaderCallback(SpringHeaderCallback callback) {

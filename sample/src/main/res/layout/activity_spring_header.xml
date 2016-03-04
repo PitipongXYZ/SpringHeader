@@ -11,13 +11,7 @@
         android:id="@+id/header"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:background="#cccccc"
-        android:gravity="center"
-        android:layout_gravity="top"
-        android:layout_marginTop="-48dp"
-        app:layout_behavior="@string/spring_header_behavior"
-        app:behavior_hoveringOffset="48dp"
-        app:behavior_maxOffset="192dp"/>
+        android:background="#cccccc"/>
 
     <include
         layout="@layout/scroll_view"
